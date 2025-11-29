@@ -149,6 +149,8 @@
                     </select>
                     <input type="text" id="valor_troco" class="form-control mt-2" placeholder="Valor do troco"
                             style="display:none" autocomplete="off">
+                    <select class="form-control mt-2" id="parcelas_cartao" style="display:none" placeholder="Parcelas">
+                    </select>
                 </div>
 
                 <button class="btn btn-primary btn-vender" onclick="fazerVenda()">
@@ -227,6 +229,7 @@
         var valor_venda = $('#valor_venda').val();
         var forma_pag = $('#forma_pag').val();
         var valor_troco = $('#valor_troco').val();
+        var nu_parcelas = $('#parcelas_cartao').val();
         
 
         if (!valor_venda) {
@@ -252,7 +255,7 @@
 
         // Botão imprimir
         $('#btnImprimir').off('click').on('click', function() {
-            imprimirVenda(valor_venda, forma_pag, valor_troco);
+            imprimirVenda(valor_venda, forma_pag, valor_troco, nu_parcelas);
         });
 
         // Botão finalizar
@@ -278,11 +281,46 @@
         });
     });
 
+    function atualizarParcelas() {
+    const forma = $('#forma_pag').val();
+
+    // só gera parcelas se a forma for cartão
+    if (forma !== 'Cartão') return;
+
+    const total = parseValor($('#valor_venda').val());
+    if (!total || total <= 0) return;
+
+    let options = "";
+    for (let i = 1; i <= 12; i++) {
+        const valorParcela = (total / i).toFixed(2).replace('.', ',');
+        options += `<option value="${i}">${i}x - R$ ${valorParcela}</option>`;
+    }
+
+    $('#parcelas_cartao').html(options);
+}
+
+$('#valor_venda').on('keyup', function() {
+    atualizarParcelas();
+});
+
 $('#forma_pag').on('change', function() {
-    if ($(this).val() === 'Dinheiro') {
+    const forma = $(this).val();
+
+    if (forma === 'Dinheiro') {
         $('#valor_troco').show();
-    } else {
+        $('#parcelas_cartao').hide();
+        $('#parcelas_cartao').empty();
+    } 
+    else if (forma === 'Cartão') {
         $('#valor_troco').hide().val('');
+
+        atualizarParcelas();
+
+        $('#parcelas_cartao').show();
+    }
+    else {
+        $('#valor_troco').hide().val('');
+        $('#parcelas_cartao').hide().empty();
     }
 });
 </script>
@@ -321,7 +359,7 @@ $('#forma_pag').on('change', function() {
         return Promise.resolve();
     }
 
-    async function imprimirVenda(valor_venda, forma_pag, valor_troco) {
+    async function imprimirVenda(valor_venda, forma_pag, valor_troco, nu_parcelas) {
         const dataAtual = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
         const conteudo = `
          Donna Rafinha
@@ -343,7 +381,8 @@ Obrigado pela preferência!
         forma_pag,
         valor_venda,
         valor_troco,
-        produtos
+        produtos,
+        nu_parcelas
     };
     localStorage.setItem("vendaAtual", JSON.stringify(dadosVenda));
 
@@ -355,7 +394,8 @@ Obrigado pela preferência!
             forma_pag,
             valor_venda,
             valor_troco,
-            produtos: JSON.stringify(produtos)
+            produtos: JSON.stringify(produtos),
+            nu_parcelas
         });
 
 

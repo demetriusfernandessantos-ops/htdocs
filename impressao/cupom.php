@@ -5,8 +5,21 @@ $dados = [
     'valor_pago' => $_POST['valor_pago'] ?? '',
     'forma_pag' => $_POST['forma_pag'] ?? '',
     'valor_venda' => $_POST['valor_venda'] ?? '',
+    'nu_parcelas' => $_POST['nu_parcelas'] ?? '',
     'produtos' => json_decode($_POST['produtos'] ?? '[]', true)
 ];
+
+$valor_pagamento_exibicao = $dados['valor_venda']; 
+
+if ($dados['forma_pag'] === 'Cartão' && !empty($dados['nu_parcelas'])) {
+    $valorNumerico = floatval(str_replace(['R$', '.', ','], ['', '', '.'], $dados['valor_venda']));
+    $parcelas = intval($dados['nu_parcelas']);
+    $valorParcela = $parcelas > 0 ? $valorNumerico / $parcelas : $valorNumerico;
+    $valorParcela = number_format($valorParcela, 2, ',', '.');
+
+    // Ex: "6x de R$ 20,00"
+    $valor_pagamento_exibicao = "{$parcelas}x de R$ {$valorParcela}";
+}
 
 list($data, $hora) = explode(',', $dados['dataAtual']);
 $total_itens = count($dados['produtos']);
@@ -112,7 +125,7 @@ $html .= '
     <div class="linha"></div>
     <div class="total"><span>QTD. total de itens: </span><span>' . $total_itens . '</span></div>
     <div class="total"><span>TOTAL: </span><span>' . htmlspecialchars($dados['valor_venda']) . '</span></div>
-    <div class="total"><span>' . htmlspecialchars($dados['forma_pag']) . ': </span><span>' . htmlspecialchars($dados['valor_venda']) . '</span></div>
+    <div class="total"><span>' . htmlspecialchars($dados['forma_pag']) . ': </span><span>' . htmlspecialchars($valor_pagamento_exibicao) . '</span></div>
     <div  class="total"><span>Troco: </span><span>' . htmlspecialchars($dados['valor_troco']) . '</span></div>
     <div class="linha"></div>
     <div class="cabecalho">Obrigado pela preferência!</div>
